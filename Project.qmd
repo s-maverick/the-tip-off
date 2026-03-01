@@ -3,6 +3,15 @@ title: "The Tip-Off"
 subtitle: "How does gender influence tipping behavior in restaurant settings?\nDACSS 602 (Fall 2024)"
 author: Sangam Patil
 format: 
+  pdf:
+    toc: true
+    toc-depth: 2
+    toc-title: Contents
+    number-sections: true
+    colorlinks: true
+    geometry:
+      - margin=1in
+    fontsize: 10pt
   html:
     toc: true
     toc-depth: 2

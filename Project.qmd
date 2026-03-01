@@ -1,0 +1,183 @@
+---
+title: "The Tip-Off"
+subtitle: "How does gender influence tipping behavior in restaurant settings?\nDACSS 602 (Fall 2024)"
+author: Sangam Patil
+format: 
+  html:
+    toc: true
+    toc-depth: 2
+    toc-title: Contents
+    toc-location: left
+    html-math-method: katex
+    theme: flatly
+    smooth-scroll: true
+    link-external-icon: true
+    link-external-newwindow: true
+    citations-hover: true
+    footnotes-hover: true
+    font-size: 80%
+---
+
+
+# Introduction
+
+Our experiment aims to investigate gender bias in tipping culture. Tipping in restaurants has become a point of contention, especially with state level elections proposing to abolish tips and implement minimum wage. We want to use a survey experiment to explore underlying reasons for low or high gratuity.
+
+
+# Methodology
+
+We implemented a 2x2 factorial design to examine the effect of the server’s gender on gratuity (tip amount). Participants were randomly assigned to view a photo of either a male or female server and presented with an identical dining scenario where the server makes a small mistake. This design ensures randomization across treatment groups, minimizing bias and establishing causal relationships. The treatment variable is the server’s gender, coded as a dummy variable: 1 represents a male server, and 2 represents a female server. The outcome variable is the amount of gratuity (tip) participants report they would provide in response to the dining scenario. The total sample size for this experiment is 220 participants, ensuring sufficient statistical power to detect potential differences in gratuity across the treatment groups. This experiment allows us to test whether the server’s gender influences the tipping behavior of participants, providing insights into potential biases or gender-based perceptions in service-related contexts.
+
+
+# Analysis
+
+We used a t-test for this analysis because our independent variable (server gender) is binary (male or female), and our dependent variable (gratuity amount) is numeric. The t-test is appropriate for comparing the means of two groups to determine whether there is a statistically significant difference between them. In this case, the test allows us to evaluate whether the gender of the server influences the gratuity amount provided by participants. This approach helps identify any potential correlation or causal relationship between the server’s gender and tipping behavior.
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(patchwork)
+data <- read_csv("data/fa24_g4.csv")
+head(data)
+```
+
+```{r, fig.alt="This box plot shows the distribution of tip amounts. The box represents the interquartile range (IQR), with the line inside indicating the median. The whiskers extend to the minimum and maximum values, excluding outliers. The dots beyond the whiskers are considered outliers."}
+ggplot(filter(data, 
+              !is.na(g4q2)), 
+       aes(x = g4q2, y = "")) +
+  geom_boxplot(outlier.shape = NA, width = 0.3, color = "blue", fill = "lightblue") +
+  geom_jitter(width = 0.2, size = 1.5, alpha = 0.6, color = "darkred") +
+  labs(title = "Box Plot",
+       y = "",
+       x = "Tip Amount",
+       subtitle = "") +
+  theme_bw() +
+  scale_color_viridis_d()
+```
+
+This graph is a box plot combined with jittered points, visualizing the distribution of "Tip Amount" data. The blue box plot, filled with light blue, represents the interquartile range (IQR) and highlights the median, while the jittered dark red points show individual data points with slight horizontal displacement to avoid overlap. The majority of tip amounts are clustered between 0 to 25, with a few extreme outliers extending beyond 50, 100, 200, and 300. 
+
+```{r}
+# Here, we removed the outliers and converted percentage into amount(Dollars).
+new_data <- mutate(data, g4q2 = case_when(g4q2 > 49 ~ NA,
+                                   g4q2 == 20 ~ 10,
+                                   g4q2 == 25 ~ 12.5,
+                                   g4q2 == 30 ~ 15,
+                                   g4q2 == 33 ~ 16.5,
+                                   .default = g4q2))
+```
+
+```{r}
+# Label Encoding to gender variablr of server i.e. IV 
+new_data <- mutate(new_data, IV2 = if_else(IV == "male", 1, 2, NA))
+new_data <- mutate(new_data, gender2 = if_else(gender == 1, "male", "female", NA))
+```
+
+```{r}
+# t-test - Tip amount and Gender of server
+t.test(g4q2 ~ IV2, data = new_data, var.equal = TRUE)
+```
+
+```{r}
+# t-test - Tip amount and Gender of respondent
+t.test(g4q2 ~ gender, data = new_data, var.equal = TRUE)
+```
+
+```{r}
+new_data %>%
+  group_by(IV) %>%
+  summarise(Average = mean(g4q2, na.rm = TRUE))
+```
+
+
+# Results
+
+The results of the t-test led us to draw the conclusion that any potential existence of gender bias in tipping behaviors is not prevalent enough to be of note. The p-value obtained was far too large to be statistically significant in any context.
+1. T-test for IV on g4q2
+	•	Test Type: Two-sample t-test assuming equal variance (var.equal = TRUE).
+	•	Null Hypothesis (H₀): There is no difference in means between the two IV groups.
+	•	Alternative Hypothesis (H₁): There is a significant difference in means between the two IV groups.
+
+Results Summary:
+	•	t-value = -0.97045
+	•	Degrees of freedom (df) = 172
+	•	p-value = 0.3332
+	•	95% Confidence Interval = [-1.4561, 0.4963]
+	•	Sample Estimates:
+	•	Mean in group 1 = 9.12
+	•	Mean in group 2 = 9.60
+
+```{r, fig.alt="This figure shows the relationship between gender and tipping behavior. The left plot shows that regardless of the gender of the server, both male and female respondents tip about the same amount. The right plot shows that both male and female respondents are about equally likely to tip, regardless of the gender of the server."}
+plot1 <- ggplot(filter(new_data, 
+                       !is.na(IV),
+                       !is.na(g4q1)),
+                aes(x = IV, fill = g4q1)) +
+  geom_bar() +
+  labs(x = "Gender of Server", y = "Count", fill = "Tip", title = "Tipping Behavior", subtitle = "In Relation to Gender of Server") +
+  scale_color_viridis_d() +
+  theme_bw() +
+  geom_text(stat = "count", 
+            aes(label = after_stat(count)), 
+            position = position_stack(vjust = 0.5))
+
+plot2 <- ggplot(filter(new_data, 
+                       !is.na(gender2),
+                       !is.na(g4q1)),
+                aes(x = gender2, fill = g4q1)) +
+  geom_bar() +
+  labs(x = "Gender of Respondent", y = "Count", fill = "Tip", title = "Tipping Behavior", subtitle = "In Relation to Gender of Respondent") +
+  scale_color_viridis_d() +
+  theme_bw() +
+  geom_text(stat = "count", 
+            aes(label = after_stat(count)), 
+            position = position_stack(vjust = 0.5))
+
+combined_plot <- plot1 + plot2
+
+combined_plot
+```
+
+This graph presents the results of a survey on tipping behavior in relation to the gender of both the server and the respondent. The left panel focuses on the gender of the server. It shows that when the server is female, 89 respondents tipped, while 17 did not. Conversely, when the server is male, 91 respondents tipped, and 23 did not. This suggests that tipping behavior is not significantly influenced by the server's gender. The right panel examines the gender of the respondent. Here, we see that 104 female respondents tipped, while 26 did not. Among male respondents, 76 tipped, and 14 did not. This indicates that female respondents are more likely to tip than male respondents. In conclusion, the graph reveals that while the gender of the server does not seem to impact tipping behavior, the gender of the respondent does play a role, with females being more likely to tip than males.
+
+```{r, fig.alt="This bar chart shows the average tip amount based on the gender of the server and the respondent. The tip amount is higher when the server is female, regardless of the respondent's gender. Additionally, female respondents tend to tip more than male respondents, regardless of the server's gender."}
+summary_data <- new_data %>%
+  group_by(IV, gender2) %>%
+  summarize(Mean_Tip = mean(g4q2, na.rm = TRUE))
+
+ggplot(summary_data, aes(x = gender2, y = Mean_Tip, fill = IV)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(aes(label = round(Mean_Tip, 2)), 
+            position = position_dodge(width = 0.9), 
+            vjust = -0.5, size = 4) +
+  labs(title = "Average Tip Amount by Server Gender and Respondent Gender",
+       x = "Respondent Gender",
+       y = "Average Tip Amount",
+       fill = "Server Gender") +
+  theme_bw()
+```
+
+This bar chart visualizes the average tip amount as a function of both the server's gender and the respondent's gender. The chart reveals that when the server is female, regardless of the respondent's gender, the average tip amount is higher. Specifically, the average tip amount is `$`9.15 when the respondent is female and `$`10.40 when the respondent is male. On the other hand, when the server is male, the average tip amount is `$`9.03 for female respondents and `$`9.23 for male respondents. This suggests that female servers tend to receive higher tips compared to male servers, and this difference is more pronounced when the respondent is male.
+
+
+# Findings
+
+As a result of the t-test, the null hypothesis was not rejected, and it is uncertain whether or not there is a gender bias that exists in tipping culture based on the gender of the server and the amount that they are tipped. With a p-value of 0.3332 and a 95% confidence interval of (-1.4561, 0.4962323), it is more than evident that more research needs to be done in order to find the biases that exist in the serving world.
+
+```{r, fig.alt="This box plot shows the distribution of tip amounts based on the gender of the server and the respondent. The tip amounts are generally higher when the server is female. There are also some outliers, particularly for female servers."}
+ggplot(new_data, aes(x = as.factor(IV), y = g4q2, fill = as.factor(gender2))) +
+  geom_boxplot() +
+  labs(title = "Distribution of Tip Amount by Gender",
+       x = "Gender of Server", 
+       y = "Tip Amount",
+       fill = "Gender of Respondent") +
+  theme_bw() +
+  scale_color_viridis_d()
+```
+
+The plot reveals several key insights, when the server is female, the median tip amount is generally higher compared to when the server is male. This is evident from the position of the median lines within the boxes. There is a noticeable difference in tipping behavior between male and female respondents. Female respondents tend to tip more generously, as indicated by the higher median and overall distribution of tip amounts in the boxes associated with female respondents. The plot also highlights some outlier tip amounts, represented by individual data points outside the whiskers. These outliers suggest that there are instances of unusually high or low tips, which might be due to various factors such as exceptional service, dissatisfaction, or other specific circumstances. Overall, this box plot provides a clear visual representation of how the gender of both the server and the respondent influences tipping behavior, with female servers typically receiving higher tips and female respondents being more generous tippers.
+
+
+# Discussion
+
+While our hypothesis was incorrect, our foray into this data yielded a lot of questions that would be worth exploring further. We were particularly interested in seeing how the gender of the customer was a factor into the tipping amount. What we found, just by simply glancing at the dataset, was that female customers were more likely to tip out of obligation, whereas male customers tended to be more scrutinizing. We believe this could set a foundation for another experiment worth investigating.
